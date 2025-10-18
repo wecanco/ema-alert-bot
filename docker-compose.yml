@@ -1,0 +1,86 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ema-alert-bot
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - ./:/var/www/html
+      - ./storage:/var/www/html/storage
+      - ./database:/var/www/html/database
+    environment:
+      - APP_NAME=EmaAlertBot
+      - APP_ENV=production
+      - APP_DEBUG=false
+      - APP_URL=http://localhost
+      - DB_CONNECTION=sqlite
+      - DB_DATABASE=/var/www/html/database/database.sqlite
+      - QUEUE_CONNECTION=database
+      - CACHE_STORE=database
+      - SESSION_DRIVER=database
+      - MARKETDATA_PROVIDER=binance
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - DB_SEED=true
+    networks:
+      - ema-network
+    depends_on:
+      - nginx
+
+  nginx:
+    image: nginx:alpine
+    container_name: ema-nginx
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    volumes:
+      - ./:/var/www/html
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    networks:
+      - ema-network
+
+  # Optional: MySQL database (if you prefer MySQL over SQLite)
+  # Uncomment the following section and update DB_CONNECTION in app service
+  # mysql:
+  #   image: mysql:8.0
+  #   container_name: ema-mysql
+  #   restart: unless-stopped
+  #   environment:
+  #     MYSQL_DATABASE: ema_alert_bot
+  #     MYSQL_ROOT_PASSWORD: root_password
+  #     MYSQL_USER: ema_user
+  #     MYSQL_PASSWORD: ema_password
+  #   volumes:
+  #     - mysql-data:/var/lib/mysql
+  #   ports:
+  #     - "3306:3306"
+  #   networks:
+  #     - ema-network
+
+  # Optional: PostgreSQL database (alternative to MySQL/SQLite)
+  # postgres:
+  #   image: postgres:15-alpine
+  #   container_name: ema-postgres
+  #   restart: unless-stopped
+  #   environment:
+  #     POSTGRES_DB: ema_alert_bot
+  #     POSTGRES_USER: ema_user
+  #     POSTGRES_PASSWORD: ema_password
+  #   volumes:
+  #     - postgres-data:/var/lib/postgresql/data
+  #   ports:
+  #     - "5432:5432"
+  #   networks:
+  #     - ema-network
+
+networks:
+  ema-network:
+    driver: bridge
+
+# Uncomment if using MySQL or PostgreSQL
+# volumes:
+#   mysql-data:
+#   postgres-data:
